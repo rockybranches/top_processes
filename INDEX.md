@@ -78,7 +78,7 @@ Your System Analysis (40-minute monitoring):
 ### Running the Script
 
 ```bash
-cd /home/robbiec/Documents/Datasets/top_processes
+cd $(pwd)
 .venv/bin/python3 generate_report.py
 ```
 
@@ -119,7 +119,7 @@ Output: Professional markdown report + 7 visualizations
 
 ### Working Directory
 ```
-/home/robbiec/Documents/Datasets/top_processes/
+./
 ├── generate_report.py                      ← Main script
 ├── SCRIPT_DOCUMENTATION.md                 ← Technical guide
 ├── DELIVERY_SUMMARY.txt                    ← Project summary

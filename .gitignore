@@ -8,3 +8,30 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Sensitive raw data files - NEVER COMMIT
+raw_top_processes.out
+raw_*.out
+
+# Generated data files containing sensitive information
+formatted_data/top_processes.parquet
+formatted_data/*.parquet
+formatted_data/*.csv
+
+# Generated output files
+report_output/system_performance_report.md
+report_output/README.md
+report_output/*.png
+report_output/fig_*.png
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak

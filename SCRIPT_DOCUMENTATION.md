@@ -167,7 +167,7 @@ generate_markdown_report(df, analyses)
 
 ### Basic Usage
 ```bash
-cd /home/robbiec/Documents/Datasets/top_processes
+cd $(pwd)
 .venv/bin/python3 generate_report.py
 ```
 
@@ -385,16 +385,16 @@ df = df[df['COMMAND'].str.contains('python')]
 ### Issue: "FileNotFoundError: formatted_data/top_processes.parquet"
 ```bash
 # Check file exists
-ls -la /home/robbiec/Documents/Datasets/top_processes/formatted_data/
+ls -la ./formatted_data/
 
 # Or modify path in script:
-DATA_PATH = Path("/correct/path/to/data.parquet")
+DATA_PATH = Path("./formatted_data/top_processes.parquet")
 ```
 
 ### Issue: "Permission denied" writing report
 ```bash
 # Check output directory permissions
-ls -la /home/robbiec/Documents/Datasets/top_processes/report_output/
+ls -la ./report_output/
 
 # Or create it:
 mkdir -p report_output
@@ -434,7 +434,7 @@ Based on typical results from your data:
 ## File Organization
 
 ```
-/home/robbiec/Documents/Datasets/top_processes/
+./
 ├── generate_report.py              # Main script (THIS FILE)
 ├── formatted_data/
 │   └── top_processes.parquet      # Input data (320K records)

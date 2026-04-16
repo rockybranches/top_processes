@@ -122,7 +122,7 @@ USER-FACING EFFECTS:
 ================================================================================
 
 RUNNING THE SCRIPT:
-  $ cd /home/robbiec/Documents/Datasets/top_processes
+  $ cd $(pwd)
   $ .venv/bin/python3 generate_report.py
 
 EXPECTED RUNTIME: 2-3 seconds
@@ -246,13 +246,13 @@ SUPPORT:
 ================================================================================
 
 PRIMARY SCRIPT:
-  /home/robbiec/Documents/Datasets/top_processes/generate_report.py
+  ./generate_report.py
 
 INPUT DATA:
-  /home/robbiec/Documents/Datasets/top_processes/formatted_data/top_processes.parquet
+  ./formatted_data/top_processes.parquet
 
 OUTPUT DIRECTORY:
-  /home/robbiec/Documents/Datasets/top_processes/report_output/
+  ./report_output/
 
 GENERATED FILES:
   system_performance_report.md (main deliverable)

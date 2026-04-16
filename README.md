@@ -1,5 +1,18 @@
 # Datasets/top_processes
 
+## ⚠️ Privacy Notice
+
+**IMPORTANT:** This repository contains system performance analysis tools. When running on actual system data:
+
+- Raw process data files (e.g., `raw_top_processes.out`) contain **sensitive information** including usernames, process names, and system details
+- **Do NOT commit** raw data files, parquet files, or generated reports to public repositories
+- Use the provided `.gitignore` to prevent accidental commits of sensitive data
+- For public sharing, use **anonymized data only**
+
+See [Anonymization](#anonymization) section below for guidance.
+
+---
+
 ## CPU Time Series Visualization
 
 __Plot Features:__
@@ -36,5 +49,40 @@ __Output File:__
 
 __Usage:__
 
-##
-	.venv/bin/python3 plot_cpu_timeseries.py formatted_data/top_processes.parquet -o cpu-pct.png
+```bash
+.venv/bin/python3 plot_cpu_timeseries.py formatted_data/top_processes.parquet -o cpu-pct.png
+```
+
+---
+
+## Anonymization
+
+To prepare data for public sharing, anonymize usernames and sensitive process names:
+
+```python
+import pandas as pd
+import hashlib
+
+def anonymize_data(df):
+    """Anonymize sensitive user and process information."""
+    df = df.copy()
+    
+    # Map usernames to generic identifiers
+    users = df['USER'].unique()
+    user_map = {user: f'user_{i}' for i, user in enumerate(users)}
+    df['USER'] = df['USER'].map(user_map)
+    
+    # Optionally hash process names
+    df['COMMAND_HASH'] = df['COMMAND'].apply(
+        lambda x: hashlib.md5(x.encode()).hexdigest()[:8]
+    )
+    
+    return df
+
+# Usage:
+df = pd.read_parquet('formatted_data/top_processes.parquet')
+df_anon = anonymize_data(df)
+df_anon.to_parquet('formatted_data/top_processes_anonymized.parquet', index=False)
+```
+
+**Note:** The `.gitignore` file is configured to prevent accidental commits of parquet files.

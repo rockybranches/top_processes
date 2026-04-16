@@ -14,6 +14,8 @@ from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
 import warnings
+import sys
+import click
 
 warnings.filterwarnings("ignore")
 
@@ -21,8 +23,10 @@ warnings.filterwarnings("ignore")
 # CONFIGURATION
 # ============================================================================
 
-DATA_PATH = Path(__file__).parent / "formatted_data" / "top_processes.parquet"
-OUTPUT_DIR = Path(__file__).parent / "report_output"
+DATA_PATH = (
+    Path(__file__).parent.parent / "formatted_data" / "top_processes_120.parquet"
+)
+OUTPUT_DIR = Path(__file__).parent.parent / "report_output"
 REPORT_PATH = OUTPUT_DIR / "system_performance_report.md"
 
 # Create output directory
@@ -1035,44 +1039,58 @@ def generate_markdown_report(
 # ============================================================================
 
 
-def main():
-    """Main execution flow."""
-    print("\n" + "=" * 70)
-    print("SYSTEM PERFORMANCE ANALYSIS REPORT GENERATOR")
-    print("=" * 70 + "\n")
+def run_full_analysis(verbose=True):
+    """Run the complete analysis pipeline."""
+    if verbose:
+        print("\n" + "=" * 70)
+        print("SYSTEM PERFORMANCE ANALYSIS REPORT GENERATOR")
+        print("=" * 70 + "\n")
 
     # Load data
-    print("📊 Loading data...")
+    if verbose:
+        print("📊 Loading data...")
     df = load_data()
-    print(
-        f"   ✓ Loaded {len(df):,} records from {df['TIMESTAMP'].nunique()} snapshots\n"
-    )
+    if verbose:
+        print(
+            f"   ✓ Loaded {len(df):,} records from {df['TIMESTAMP'].nunique()} snapshots\n"
+        )
 
     # Run analyses
-    print("🔍 Running analyses...")
-    print("   • CPU-bound analysis...", end=" ", flush=True)
+    if verbose:
+        print("🔍 Running analyses...")
+        print("   • CPU-bound analysis...", end=" ", flush=True)
     analysis_cpu = analyze_cpu_bound(df)
-    print("✓")
+    if verbose:
+        print("✓")
 
-    print("   • Memory-bound analysis...", end=" ", flush=True)
+    if verbose:
+        print("   • Memory-bound analysis...", end=" ", flush=True)
     analysis_memory = analyze_memory_bound(df)
-    print("✓")
+    if verbose:
+        print("✓")
 
-    print("   • I/O-bound analysis...", end=" ", flush=True)
+    if verbose:
+        print("   • I/O-bound analysis...", end=" ", flush=True)
     analysis_io = analyze_io_bound(df)
-    print("✓")
+    if verbose:
+        print("✓")
 
-    print("   • System impact analysis...", end=" ", flush=True)
+    if verbose:
+        print("   • System impact analysis...", end=" ", flush=True)
     analysis_system = analyze_system_impact(df)
-    print("✓\n")
+    if verbose:
+        print("✓\n")
 
     # Create visualizations
-    print("📈 Creating visualizations...")
+    if verbose:
+        print("📈 Creating visualizations...")
     create_visualizations(df, analysis_cpu, analysis_memory, analysis_io)
-    print("")
+    if verbose:
+        print("")
 
     # Generate report
-    print("📝 Generating markdown report...")
+    if verbose:
+        print("📝 Generating markdown report...")
     report_content = generate_markdown_report(
         df, analysis_cpu, analysis_memory, analysis_io, analysis_system
     )
@@ -1081,36 +1099,303 @@ def main():
     with open(REPORT_PATH, "w") as f:
         f.write(report_content)
 
-    print(f"   ✓ Report saved to: {REPORT_PATH}\n")
+    if verbose:
+        print(f"   ✓ Report saved to: {REPORT_PATH}\n")
 
-    # Summary statistics
-    print("=" * 70)
-    print("REPORT SUMMARY")
-    print("=" * 70)
-    print(f"\n📊 Peak System CPU:     {analysis_system['peak_system_cpu']:.1f}%")
-    print(f"📊 Average System CPU:  {analysis_system['mean_system_cpu']:.2f}%")
-    print(f"🧠 Peak System Memory:  {analysis_system['peak_system_mem']:.2f}%")
-    print(f"🧠 Average Memory:      {analysis_system['mean_system_mem']:.2f}%")
+    return analysis_cpu, analysis_memory, analysis_io, analysis_system
 
-    io_wait_pct = (
-        analysis_io["state_distribution"].get("D", 0)
-        / analysis_io["state_distribution"].sum()
-        * 100
-    )
-    print(f"⏳ I/O Wait Processes:  {io_wait_pct:.1f}%")
 
-    print(
-        f"\n📌 Top CPU Process:     {analysis_cpu['top_cpu_commands'].index[0]} ({analysis_cpu['top_cpu_commands'].iloc[0]['mean_cpu']:.2f}% avg)"
-    )
-    print(
-        f"📌 Top Memory Process:  {analysis_memory['top_memory_commands'].index[0]} ({analysis_memory['top_memory_commands'].iloc[0]['mean_mem_pct']:.2f}% avg)"
-    )
+@click.group()
+def cli():
+    """System Performance Analysis Report Generator CLI.
 
-    print(f"\n✅ Report generated successfully!")
-    print(f"📁 Output directory:    {OUTPUT_DIR}")
-    print(f"📄 Main report:         {REPORT_PATH.name}")
-    print(f"📊 Figures generated:   7 high-quality PNG visualizations\n")
+    Analyze process monitoring data and generate comprehensive performance reports
+    with visualizations and recommendations.
+    """
+    pass
+
+
+@cli.command()
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    default=str(REPORT_PATH),
+    help=f"Output path for the report (default: {REPORT_PATH})",
+)
+@click.option(
+    "--data",
+    "-d",
+    type=click.Path(exists=True),
+    default=str(DATA_PATH),
+    help=f"Path to input data file (default: {DATA_PATH})",
+)
+def generate(output, data):
+    """Generate a complete performance analysis report with visualizations."""
+    global DATA_PATH, REPORT_PATH
+    DATA_PATH = Path(data)
+    REPORT_PATH = Path(output)
+
+    try:
+        analysis_cpu, analysis_memory, analysis_io, analysis_system = run_full_analysis(
+            verbose=True
+        )
+
+        # Summary statistics
+        print("=" * 70)
+        print("REPORT SUMMARY")
+        print("=" * 70)
+        print(f"\n📊 Peak System CPU:     {analysis_system['peak_system_cpu']:.1f}%")
+        print(f"📊 Average System CPU:  {analysis_system['mean_system_cpu']:.2f}%")
+        print(f"🧠 Peak System Memory:  {analysis_system['peak_system_mem']:.2f}%")
+        print(f"🧠 Average Memory:      {analysis_system['mean_system_mem']:.2f}%")
+
+        io_wait_pct = (
+            analysis_io["state_distribution"].get("D", 0)
+            / analysis_io["state_distribution"].sum()
+            * 100
+        )
+        print(f"⏳ I/O Wait Processes:  {io_wait_pct:.1f}%")
+
+        print(
+            f"\n📌 Top CPU Process:     {analysis_cpu['top_cpu_commands'].index[0]} ({analysis_cpu['top_cpu_commands'].iloc[0]['mean_cpu']:.2f}% avg)"
+        )
+        print(
+            f"📌 Top Memory Process:  {analysis_memory['top_memory_commands'].index[0]} ({analysis_memory['top_memory_commands'].iloc[0]['mean_mem_pct']:.2f}% avg)"
+        )
+
+        print(f"\n✅ Report generated successfully!")
+        print(f"📁 Output directory:    {OUTPUT_DIR}")
+        print(f"📄 Main report:         {REPORT_PATH.name}")
+        print(f"📊 Figures generated:   7 high-quality PNG visualizations\n")
+    except Exception as e:
+        click.echo(f"Error: {str(e)}", err=True)
+        sys.exit(1)
+
+
+@cli.command()
+def summary():
+    """Display a quick summary of system metrics without generating full report."""
+    try:
+        df = load_data()
+
+        click.echo("\n" + "=" * 70)
+        click.echo("SYSTEM PERFORMANCE SUMMARY")
+        click.echo("=" * 70 + "\n")
+
+        # Quick metrics
+        click.echo(f"📊 Data Coverage:")
+        click.echo(f"   • Records: {len(df):,}")
+        click.echo(f"   • Snapshots: {df['TIMESTAMP'].nunique()}")
+        click.echo(
+            f"   • Time Range: {df['TIMESTAMP'].min()} to {df['TIMESTAMP'].max()}"
+        )
+        click.echo(f"   • Unique Processes: {df['COMMAND'].nunique()}")
+        click.echo(f"   • Unique Users: {df['USER'].nunique()}\n")
+
+        # CPU metrics
+        click.echo(f"📊 CPU Metrics:")
+        click.echo(f"   • Peak: {df['CPU_PERCENT'].max():.1f}%")
+        click.echo(f"   • Mean: {df['CPU_PERCENT'].mean():.2f}%")
+        click.echo(f"   • Std Dev: {df['CPU_PERCENT'].std():.2f}%\n")
+
+        # Memory metrics
+        click.echo(f"🧠 Memory Metrics:")
+        click.echo(f"   • Peak: {df['MEM_PERCENT'].max():.2f}%")
+        click.echo(f"   • Mean: {df['MEM_PERCENT'].mean():.2f}%")
+        click.echo(f"   • Std Dev: {df['MEM_PERCENT'].std():.2f}%\n")
+
+        # State distribution
+        click.echo(f"📋 Process States:")
+        state_dist = df["STATE"].value_counts()
+        state_labels = {
+            "R": "Running",
+            "S": "Interruptible Sleep",
+            "D": "Uninterruptible Sleep (I/O Wait)",
+            "I": "Idle",
+            "Z": "Zombie",
+            "T": "Stopped",
+        }
+        total = state_dist.sum()
+        for state in ["R", "S", "D", "I", "Z", "T"]:
+            if state in state_dist.index:
+                count = state_dist[state]
+                pct = count / total * 100
+                click.echo(
+                    f"   • {state_labels.get(state, state):30s} {count:7,d} ({pct:5.1f}%)"
+                )
+
+        click.echo("")
+
+    except Exception as e:
+        click.echo(f"Error: {str(e)}", err=True)
+        sys.exit(1)
+
+
+@cli.command()
+@click.option(
+    "--top-n",
+    "-n",
+    type=int,
+    default=10,
+    help="Number of top processes to display (default: 10)",
+)
+def top_processes(top_n):
+    """Show top CPU and memory consuming processes."""
+    try:
+        df = load_data()
+
+        # Top CPU processes
+        click.echo("\n" + "=" * 70)
+        click.echo("TOP CPU-CONSUMING PROCESSES")
+        click.echo("=" * 70 + "\n")
+
+        cpu_by_cmd = (
+            df.groupby("COMMAND")
+            .agg({"CPU_PERCENT": ["mean", "max", "std", "count"]})
+            .round(2)
+        )
+        cpu_by_cmd.columns = ["mean_cpu", "max_cpu", "std_cpu", "observations"]
+        cpu_by_cmd = cpu_by_cmd[cpu_by_cmd["observations"] > 1].sort_values(
+            "mean_cpu", ascending=False
+        )
+
+        click.echo(f"{'Process':<35s} {'Avg CPU':<12s} {'Max CPU':<12s} {'Count':<8s}")
+        click.echo("-" * 70)
+        for cmd, row in cpu_by_cmd.head(top_n).iterrows():
+            click.echo(
+                f"{cmd:<35s} {row['mean_cpu']:>10.2f}% {row['max_cpu']:>10.2f}% {int(row['observations']):>7,d}"
+            )
+
+        # Top Memory processes
+        click.echo("\n" + "=" * 70)
+        click.echo("TOP MEMORY-CONSUMING PROCESSES")
+        click.echo("=" * 70 + "\n")
+
+        mem_by_cmd = (
+            df.groupby("COMMAND")
+            .agg({"MEM_PERCENT": ["mean", "max"], "RES_MB": ["mean", "max"]})
+            .round(2)
+        )
+        mem_by_cmd.columns = ["mean_mem", "max_mem", "mean_res", "max_res"]
+        mem_by_cmd = mem_by_cmd.sort_values("mean_mem", ascending=False)
+
+        click.echo(
+            f"{'Process':<35s} {'Avg Mem %':<12s} {'Max Mem %':<12s} {'Avg RES MB':<15s}"
+        )
+        click.echo("-" * 75)
+        for cmd, row in mem_by_cmd.head(top_n).iterrows():
+            click.echo(
+                f"{cmd:<35s} {row['mean_mem']:>10.2f}% {row['max_mem']:>10.2f}% {row['mean_res']:>13.0f} MB"
+            )
+
+        click.echo("")
+
+    except Exception as e:
+        click.echo(f"Error: {str(e)}", err=True)
+        sys.exit(1)
+
+
+@cli.command()
+def check_bottlenecks():
+    """Identify and report system bottlenecks."""
+    try:
+        df = load_data()
+
+        click.echo("\n" + "=" * 70)
+        click.echo("BOTTLENECK ANALYSIS")
+        click.echo("=" * 70 + "\n")
+
+        # Analyze bottlenecks
+        analysis_cpu = analyze_cpu_bound(df)
+        analysis_memory = analyze_memory_bound(df)
+        analysis_io = analyze_io_bound(df)
+        analysis_system = analyze_system_impact(df)
+
+        peak_cpu = analysis_system["peak_system_cpu"]
+        peak_mem = analysis_system["peak_system_mem"]
+        high_io_wait = (
+            analysis_io["state_distribution"].get("D", 0)
+            / analysis_io["state_distribution"].sum()
+            * 100
+        )
+
+        bottlenecks = []
+        if peak_cpu > 100:
+            bottlenecks.append(
+                (
+                    "CPU-Bound",
+                    f"Peak {peak_cpu:.0f}%",
+                    "🔴 CRITICAL" if peak_cpu > 300 else "🟡 WARNING",
+                )
+            )
+        if peak_mem > 50:
+            bottlenecks.append(
+                (
+                    "Memory-Bound",
+                    f"Peak {peak_mem:.1f}%",
+                    "🔴 CRITICAL" if peak_mem > 80 else "🟡 WARNING",
+                )
+            )
+        if high_io_wait > 5:
+            bottlenecks.append(
+                (
+                    "I/O-Bound",
+                    f"{high_io_wait:.1f}% in D state",
+                    "🔴 HIGH" if high_io_wait > 10 else "🟡 MODERATE",
+                )
+            )
+
+        if not bottlenecks:
+            click.echo("✓ No significant bottlenecks detected!\n")
+        else:
+            click.echo(f"{'Type':<20s} {'Metric':<20s} {'Severity':<15s}")
+            click.echo("-" * 55)
+            for btype, metric, severity in bottlenecks:
+                click.echo(f"{btype:<20s} {metric:<20s} {severity:<15s}")
+            click.echo("")
+
+    except Exception as e:
+        click.echo(f"Error: {str(e)}", err=True)
+        sys.exit(1)
+
+
+@cli.command()
+@click.option(
+    "--output-dir",
+    "-o",
+    type=click.Path(),
+    default=str(OUTPUT_DIR),
+    help=f"Output directory for visualizations (default: {OUTPUT_DIR})",
+)
+@click.option(
+    "--data",
+    "-d",
+    type=click.Path(exists=True),
+    default=str(DATA_PATH),
+    help=f"Path to input data file (default: {DATA_PATH})",
+)
+def visualize(output_dir, data):
+    """Generate visualization charts only (no markdown report)."""
+    global DATA_PATH, OUTPUT_DIR
+    DATA_PATH = Path(data)
+    OUTPUT_DIR = Path(output_dir)
+    OUTPUT_DIR.mkdir(exist_ok=True)
+
+    try:
+        click.echo("\n📈 Generating visualizations...\n")
+        df = load_data()
+        analysis_cpu = analyze_cpu_bound(df)
+        analysis_memory = analyze_memory_bound(df)
+        analysis_io = analyze_io_bound(df)
+
+        create_visualizations(df, analysis_cpu, analysis_memory, analysis_io)
+        click.echo(f"✅ Visualizations saved to: {OUTPUT_DIR}\n")
+
+    except Exception as e:
+        click.echo(f"Error: {str(e)}", err=True)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    main()
+    cli()

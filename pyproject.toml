@@ -8,4 +8,5 @@ dependencies = [
     "pandas>=2.0.0",
     "pyarrow>=10.0.0",
     "matplotlib>=3.5.0",
+    "click>=8.0.0",
 ]

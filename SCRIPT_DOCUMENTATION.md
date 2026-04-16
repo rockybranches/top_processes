@@ -167,8 +167,7 @@ generate_markdown_report(df, analyses)
 
 ### Basic Usage
 ```bash
-cd $(pwd)
-.venv/bin/python3 generate_report.py
+.venv/bin/python3 src/generate_report.py
 ```
 
 ### Expected Output
@@ -349,7 +348,7 @@ The script works on any `top` output parquet file. Generate new datasets with:
 while true; do top -bn1 >> top_output.txt; sleep 1; done
 
 # Convert to parquet using provided scripts
-python3 parse_top_processes.py top_output.txt
+.venv/bin/python3 src/parse_top_processes.py top_output.txt
 ```
 
 ### For Different Thresholds

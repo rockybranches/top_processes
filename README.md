@@ -50,7 +50,7 @@ __Output File:__
 __Usage:__
 
 ```bash
-.venv/bin/python3 plot_cpu_timeseries.py formatted_data/top_processes.parquet -o cpu-pct.png
+.venv/bin/python3 src/plot_cpu_timeseries.py formatted_data/top_processes.parquet -o cpu-pct.png
 ```
 
 ---
